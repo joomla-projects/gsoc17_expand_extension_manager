@@ -11,7 +11,7 @@ defined('_JEXEC') or die;
 
 // Set the platform root path as a constant if necessary.
 defined('JPATH_PLATFORM') or define('JPATH_PLATFORM', __DIR__);
-
+      
 // Detect the native operating system type.
 $os = strtoupper(substr(PHP_OS, 0, 3));
 
