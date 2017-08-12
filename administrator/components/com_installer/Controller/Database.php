@@ -30,15 +30,47 @@ class Database extends Controller
 	 */
 	public function fix()
 	{
-		/* @var \Joomla\Component\Installer\Administrator\Model\Database $model */
-		$model = $this->getModel('database');
-		$model->fix();
+		// Check for request forgeries
+		\JSession::checkToken() or die(\JText::_('JINVALID_TOKEN'));
 
-		$updateModel = new Update;
-		$updateModel->purge();
+		// Get items to fix the database.
+		$cid = $this->input->get('cid', array(), 'array');
 
-		// Refresh versionable assets cache
-		$this->app->flushAssets();
+		if (!is_array($cid) || count($cid) < 1)
+		{
+			$this->app->getLogger()->warning(
+				\JText::_(
+					'COM_INSTALLER_ERROR_NO_EXTENSIONS_SELECTED'
+				), array('category' => 'jerror')
+			);
+		}
+		else
+		{
+			// Get the model.
+			$model = $this->getModel('database');
+			$model->fix($cid);
+
+			$updateModel = new Update;
+			$updateModel->purge();
+
+			// Refresh versionable assets cache
+			$this->app->flushAssets();
+		}
+
+		$this->findproblems();
+	}
+
+	/**
+	 * Clear the changeSetList in the session
+	 *
+	 * @return  void
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	public function findproblems()
+	{
+		$session = \JFactory::getSession();
+		$session->set('changeSetList');
 
 		$this->setRedirect(\JRoute::_('index.php?option=com_installer&view=database', false));
 	}

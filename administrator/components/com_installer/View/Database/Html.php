@@ -22,6 +22,13 @@ use Joomla\Component\Installer\Administrator\View\Installer\Html as InstallerVie
 class Html extends InstallerViewDefault
 {
 	/**
+	 * List pagination.
+	 *
+	 * @var \Joomla\CMS\Pagination\Pagination
+	 */
+	protected $pagination;
+
+	/**
 	 * Display the view.
 	 *
 	 * @param   string  $tpl  Template
@@ -33,43 +40,27 @@ class Html extends InstallerViewDefault
 	public function display($tpl = null)
 	{
 		// Set variables
-		$app = Factory::getApplication();
+		$app = \JFactory::getApplication();
 
 		// Get data from the model.
-		$this->changeSet     = $this->get('Items');
-		$this->errors        = $this->changeSet->check();
-		$this->results       = $this->changeSet->getStatus();
-		$this->schemaVersion = $this->get('SchemaVersion');
-		$this->updateVersion = $this->get('UpdateVersion');
-		$this->filterParams  = $this->get('DefaultTextFilters');
-		$this->schemaVersion = $this->schemaVersion ?: \JText::_('JNONE');
-		$this->updateVersion = $this->updateVersion ?: \JText::_('JNONE');
-		$this->pagination    = $this->get('Pagination');
-		$this->errorCount    = count($this->errors);
-
-		if ($this->schemaVersion != $this->changeSet->getSchema())
-		{
-			$this->errorCount++;
-		}
-
-		if (!$this->filterParams)
-		{
-			$this->errorCount++;
-		}
-
-		if (version_compare($this->updateVersion, \JVERSION) != 0)
-		{
-			$this->errorCount++;
-		}
+		$this->changeSet      = $this->get('Items');
+		$this->errorCount     = $this->get('ErrorCount');
+		$this->pagination     = $this->get('Pagination');
+		$this->filterForm     = $this->get('FilterForm');
+		$this->activeFilters  = $this->get('ActiveFilters');
 
 		if ($this->errorCount === 0)
 		{
-			$app->enqueueMessage(\JText::_('COM_INSTALLER_MSG_DATABASE_OK'), 'info');
+			$app->enqueueMessage(\JText::_('COM_INSTALLER_MSG_DATABASE_CORE_OK'), 'info');
 		}
 		else
 		{
-			$app->enqueueMessage(\JText::_('COM_INSTALLER_MSG_DATABASE_ERRORS'), 'warning');
+			// Database Core Errors
+			$app->enqueueMessage(\JText::_('COM_INSTALLER_MSG_DATABASE_CORE_ERRORS'), 'warning');
 		}
+
+		// Include the component HTML helpers.
+		\JHtml::addIncludePath(JPATH_COMPONENT . '/helpers/html');
 
 		parent::display($tpl);
 	}
@@ -87,6 +78,8 @@ class Html extends InstallerViewDefault
 		 * Set toolbar items for the page.
 		 */
 		ToolbarHelper::custom('database.fix', 'refresh', 'refresh', 'COM_INSTALLER_TOOLBAR_DATABASE_FIX', false);
+
+		ToolbarHelper::custom('database.findproblems', 'refresh', 'refresh', 'COM_INSTALLER_TOOLBAR_FIND_PROBLEMS', false);
 		ToolbarHelper::divider();
 		parent::addToolbar();
 		ToolbarHelper::help('JHELP_EXTENSIONS_EXTENSION_MANAGER_DATABASE');
