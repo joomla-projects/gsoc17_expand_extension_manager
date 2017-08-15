@@ -39,6 +39,7 @@ class Updatesites extends Installer
 				'client_id',
 				'client', 'client_translated',
 				'status',
+				's.ordering', 'ordering',
 				'type', 'type_translated',
 				'folder', 'folder_translated',
 				'update_site_id',
@@ -61,7 +62,7 @@ class Updatesites extends Installer
 	 *
 	 * @since   3.4
 	 */
-	protected function populateState($ordering = 'name', $direction = 'asc')
+	protected function populateState($ordering = 's.ordering', $direction = 'asc')
 	{
 		// Load the filter state.
 		$this->setState('filter.search', $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search', '', 'string'));
@@ -148,13 +149,8 @@ class Updatesites extends Installer
 
 		$count = 0;
 
-		// Gets the update site names.
-		$query = $db->getQuery(true)
-			->select($db->qn(array('update_site_id', 'name')))
-			->from($db->qn('#__update_sites'))
-			->where($db->qn('update_site_id') . ' IN (' . implode(', ', $ids) . ')');
-		$db->setQuery($query);
-		$updateSitesNames = $db->loadObjectList('update_site_id');
+		// Gets Joomla core update sites names.
+		$updateSitesNames = $this->getJoomlaUpdateSitesNames($ids);
 
 		// Gets Joomla core update sites Ids.
 		$joomlaUpdateSitesIds = $this->getJoomlaUpdateSitesIds(0);
@@ -377,7 +373,7 @@ class Updatesites extends Installer
 	 *
 	 * @since   3.6.0
 	 */
-	protected function getJoomlaUpdateSitesIds($column = 0)
+	public function getJoomlaUpdateSitesIds($column = 0)
 	{
 		$db  = $this->getDbo();
 
@@ -399,6 +395,30 @@ class Updatesites extends Installer
 	}
 
 	/**
+	 * Fetch the Joomla update sites names.
+	 *
+	 * @param   array  $ids  Extension ids to delete.
+	 *
+	 * @return  array  Array with joomla core update site names.
+	 *
+	 * @since   __DEPLOY_VERSION__
+	 */
+	public function getJoomlaUpdateSitesNames($ids = array())
+	{
+		$db = $this->getDbo();
+
+		// Gets the update site names.
+		$query = $db->getQuery(true)
+			->select($db->quoteName(array('update_site_id', 'name')))
+			->from($db->quoteName('#__update_sites'))
+			->where($db->quoteName('update_site_id') . ' IN (' . implode(', ', $ids) . ')');
+		$db->setQuery($query);
+		$updateSitesNames = $db->loadObjectList('update_site_id');
+
+		return $updateSitesNames;
+	}
+
+	/**
 	 * Method to get the database query
 	 *
 	 * @return  \JDatabaseQuery  The database query
@@ -410,9 +430,12 @@ class Updatesites extends Installer
 		$query = $this->getDbo()->getQuery(true)
 			->select(
 				array(
-					's.update_site_id',
+					's.checked_out',
+					's.checked_out_time',
 					's.name AS update_site_name',
+					's.ordering',
 					's.type AS update_site_type',
+					's.update_site_id',
 					's.location',
 					's.enabled',
 					'e.extension_id',
